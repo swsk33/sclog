@@ -32,8 +32,12 @@ var maxLevelNameLength = 5
 // SetLevelName 设定对应级别的显示名称
 func SetLevelName(level int, name string) {
 	levelMap[level] = name
-	if len(name) > maxLevelNameLength {
-		maxLevelNameLength = len(name)
+	// 重新计算最长的名称
+	maxLevelNameLength = 0
+	for _, name := range levelMap {
+		if len(name) > maxLevelNameLength {
+			maxLevelNameLength = len(name)
+		}
 	}
 }
 
@@ -47,7 +51,7 @@ type LineConfig struct {
 		//
 		// 例如：
 		// "2006-01-02 15:04:05"
-		// "2006-01-02 15:04:05.123"
+		// "2006-01-02 15:04:05.000"
 		Pattern string
 		// 输出颜色配置
 		Color *color.Color
@@ -63,27 +67,27 @@ type LineConfig struct {
 	Message struct {
 		// 是否显示日志消息
 		Enabled bool
+		// 消息部分前缀
+		Prefix string
 		// 输出颜色配置
 		Color *color.Color
 	}
 }
 
 // NewLineConfig 日志行内容配置构造函数
-//
-// enableTime 是否显示时间
-// enableLevel 是否显示级别
-func NewLineConfig(enableTime, enableLevel bool) *LineConfig {
+func NewLineConfig() *LineConfig {
 	config := new(LineConfig)
 	// 设定默认值
 	// 时间
-	config.Time.Enabled = enableTime
-	config.Time.Pattern = "2006-01-02 15:04:05.123"
+	config.Time.Enabled = true
+	config.Time.Pattern = "2006-01-02 15:04:05.000"
 	config.Time.Color = color.New(color.FgHiWhite)
 	// 级别
-	config.Level.Enabled = enableLevel
+	config.Level.Enabled = true
 	config.Level.Color = color.New(color.FgHiWhite)
 	// 消息
 	config.Message.Enabled = true
+	config.Message.Prefix = ""
 	config.Message.Color = color.New(color.FgHiWhite)
 	return config
 }
@@ -101,15 +105,15 @@ func NewLogger() *Logger {
 	logger := &Logger{Level: INFO}
 	logger.LevelConfig = make(map[int]*LineConfig)
 	// 每一级别默认配置
-	logger.LevelConfig[TRACE] = NewLineConfig(true, true)
+	logger.LevelConfig[TRACE] = NewLineConfig()
 	logger.LevelConfig[TRACE].Level.Color = color.New(color.FgWhite)
-	logger.LevelConfig[DEBUG] = NewLineConfig(true, true)
+	logger.LevelConfig[DEBUG] = NewLineConfig()
 	logger.LevelConfig[DEBUG].Level.Color = color.New(color.FgBlue)
-	logger.LevelConfig[INFO] = NewLineConfig(true, true)
+	logger.LevelConfig[INFO] = NewLineConfig()
 	logger.LevelConfig[INFO].Level.Color = color.New(color.FgGreen)
-	logger.LevelConfig[WARN] = NewLineConfig(true, true)
+	logger.LevelConfig[WARN] = NewLineConfig()
 	logger.LevelConfig[WARN].Level.Color = color.New(color.FgYellow)
-	logger.LevelConfig[ERROR] = NewLineConfig(true, true)
+	logger.LevelConfig[ERROR] = NewLineConfig()
 	logger.LevelConfig[ERROR].Level.Color = color.New(color.FgRed)
 	return logger
 }
@@ -119,9 +123,7 @@ func NewLogger() *Logger {
 // config 行输出配置
 func (logger *Logger) ConfigAll(config *LineConfig) {
 	for level := range logger.LevelConfig {
-		// 复制一个配置对象
-		copyConfig := *config
-		logger.LevelConfig[level] = &copyConfig
+		logger.ConfigLevel(level, config)
 	}
 }
 
@@ -130,7 +132,9 @@ func (logger *Logger) ConfigAll(config *LineConfig) {
 // level 要配置的级别
 // config 传入对应配置
 func (logger *Logger) ConfigLevel(level int, config *LineConfig) {
-	logger.LevelConfig[level] = config
+	// 复制一个配置对象
+	copyConfig := *config
+	logger.LevelConfig[level] = &copyConfig
 }
 
 // 根据对应级别的配置，打印一行日志到控制台，该打印不会换行
@@ -155,6 +159,9 @@ func (logger *Logger) printLog(level int, formatMessage string, args ...interfac
 	}
 	// 打印日志消息部分
 	if config.Message.Enabled {
+		// 输出前缀
+		_, _ = config.Message.Color.Printf("%s", config.Message.Prefix)
+		// 输出主体
 		_, _ = config.Message.Color.Printf(formatMessage, args...)
 	}
 }

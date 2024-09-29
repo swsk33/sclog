@@ -3,6 +3,7 @@ package sclog
 import (
 	"fmt"
 	"github.com/fatih/color"
+	"sync"
 	"testing"
 )
 
@@ -24,7 +25,8 @@ func TestCustomLogger(t *testing.T) {
 	// 创建一个自定义的日志输出器对象
 	logger := NewLogger()
 	// 创建一个配置对象
-	config := NewLineConfig(false, true)
+	config := NewLineConfig()
+	config.Time.Enabled = false
 	config.Message.Color = color.New(color.FgCyan)
 	// 设定全部级别为自定义配置
 	logger.ConfigAll(config)
@@ -32,5 +34,44 @@ func TestCustomLogger(t *testing.T) {
 	logger.InfoLine("Info级别日志")
 	logger.WarnLine("Warn级别日志")
 	logger.ErrorLine("Error级别日志")
+	fmt.Println("----------------------------------")
+}
+
+func TestCustomLevelName(t *testing.T) {
+	// 自定义每个级别的名字
+	SetLevelName(INFO, "普通")
+	SetLevelName(WARN, "警告")
+	SetLevelName(ERROR, "错误")
+	// 打印日志
+	a := 1
+	Info("a的值为：%d\n", a)
+	Warn("a的值为：%d\n", a)
+	Error("a的值为：%d\n", a)
+	fmt.Println("----------------------------------")
+}
+
+func TestLoggerPrefix(t *testing.T) {
+	SetLevelName(INFO, "INFO")
+	SetLevelName(WARN, "WARN")
+	SetLevelName(ERROR, "ERROR")
+	// 自定义配置及其前缀
+	l1, l2 := NewLogger(), NewLogger()
+	l1.LevelConfig[INFO].Message.Prefix = "[Goroutine 1] "
+	l2.LevelConfig[INFO].Message.Prefix = "[Goroutine 2] "
+	waitGroup := &sync.WaitGroup{}
+	waitGroup.Add(2)
+	go func() {
+		for i := 0; i <= 10; i += 2 {
+			l1.Info("当前输出：%d\n", i)
+		}
+		waitGroup.Done()
+	}()
+	go func() {
+		for i := 1; i <= 11; i += 2 {
+			l2.Info("当前输出：%d\n", i)
+		}
+		waitGroup.Done()
+	}()
+	waitGroup.Wait()
 	fmt.Println("----------------------------------")
 }
