@@ -124,7 +124,7 @@ func main() {
 
 如果想直接关闭全部级别的日志输出，则设定其`Level`为`sclog.OFF`即可。
 
-## 5，输出内容的自定义
+## 5，输出内容的自定义配置
 
 每一行日志的输出内容，其结构都是固定的，具体如下：
 
@@ -176,14 +176,14 @@ type LineConfig struct {
 
 在`LineConfig`对象中：
 
-- `Time`属性为结构体，用于自定义日志**时间**部分的输出，其中：
+- `Time`属性为结构体，用于自定义日志**时间**部分的输出行为，其中：
 	- `Enabled` 是否输出时间部分内容，默认为`true`
 	- `Pattern` 格式化时间字符串，使用的是`time.Format`的`Layout`字符串，默认为`2006-01-02 15:04:05.000`
 	- `Color` 时间部分的颜色，默认为白色
-- `Level`属性为结构体，用于自定义日志**级别**部分的输出，其中：
+- `Level`属性为结构体，用于自定义日志**级别**部分的输出行为，其中：
 	- `Enabled` 是否输出级别部分内容，默认为`true`
 	- `Color` 时间部分的颜色，默认为白色
-- `Message`属性为结构体，用于自定义日志**消息**部分的输出，其中：
+- `Message`属性为结构体，用于自定义日志**消息**部分的输出行为，其中：
 	- `Enabled` 是否输出消息部分内容，默认为`true`
 	- `Prefix` 消息部分的前缀字符串，默认为空字符串
 	- `Color` 时间部分的颜色，默认为白色
@@ -298,3 +298,97 @@ func main() {
 结果：
 
 ![image-20240929235742651](https://swsk33-note.oss-cn-shanghai.aliyuncs.com/image-20240929235742651.png)
+
+### (3) 自定义字符颜色
+
+在默认的`Logger`中除了级别部分信息为彩色之外，其余部分消息均为白色字符，可通过设定`LineConfig`对象中对应结构体的`Color`属性实现设定颜色。
+
+`LineConfig`对象中`Color`属性类型为`github.com/fatih/color`包下的`Color`指针类型，通过这个包下的`New`函数即可创建颜色对象，例如：
+
+```go
+package main
+
+import (
+	"gitee.com/swsk33/sclog"
+	"github.com/fatih/color"
+)
+
+func main() {
+	// 创建颜色对象
+	// 前景色为白色，背景色为绿色
+	infoColor := color.New(color.FgWhite, color.BgGreen)
+	// 创建日志输出器对象
+	logger := sclog.NewLogger()
+	// 修改日志输出器对象中，INFO级别配置对象的级别部分颜色为我们自定义的颜色对象
+	logger.LevelConfig[sclog.INFO].Level.Color = infoColor
+	// 输出日志
+	logger.InfoLine("这是Info级别日志")
+}
+```
+
+结果：
+
+![image-20240930183109048](https://swsk33-note.oss-cn-shanghai.aliyuncs.com/image-20240930183109048.png)
+
+颜色对象`color.Color`通过`New`构造函数创建，函数中可以**传入不定长个颜色常量作为参数以组合颜色**，在`color`包下定义了所有可用颜色的常量，其中`Fg`开头的表示前景色，即文字颜色，而`Bg`开头的表示背景色，默认情况下前景色为白色，背景色为透明。
+
+此外，还可以定义加粗或者带下划线的颜色对象：
+
+```go
+package main
+
+import (
+	"gitee.com/swsk33/sclog"
+	"github.com/fatih/color"
+)
+
+func main() {
+	// 黄色加粗
+	warnColor := color.New(color.FgHiYellow, color.Bold)
+	// 红色带下划线
+	errorColor := color.New(color.FgHiRed, color.Underline)
+	// 配置自定义日志对象
+	logger := sclog.NewLogger()
+	// 配置对应级别消息部分颜色
+	logger.LevelConfig[sclog.WARN].Message.Color = warnColor
+	logger.LevelConfig[sclog.ERROR].Message.Color = errorColor
+	// 打印日志
+	logger.WarnLine("这是Warn日志")
+	logger.ErrorLine("这是Error日志")
+}
+```
+
+结果：
+
+![image-20240930185525356](https://swsk33-note.oss-cn-shanghai.aliyuncs.com/image-20240930185525356.png)
+
+更多关于`color.Color`对象的创建，请参考`color`包的文档：[传送门](https://github.com/fatih/color)
+
+## 6，修改级别显示名称
+
+默认情况下，每个级别部分使用大写英文名称表示，例如`INFO`、`ERROR`等等，可以通过`SetLevelName`函数自定义每个级别的显示名：
+
+```go
+package main
+
+import (
+	"gitee.com/swsk33/sclog"
+)
+
+func main() {
+	// 自定义每个级别的名字
+	sclog.SetLevelName(sclog.INFO, "普通")
+	sclog.SetLevelName(sclog.WARN, "警告")
+	sclog.SetLevelName(sclog.ERROR, "错误")
+	a := 1
+	sclog.Info("a的值为：%d\n", a)
+	sclog.Warn("a的值为：%d\n", a)
+	sclog.Error("a的值为：%d\n", a)
+}
+```
+
+结果：
+
+![image-20240930185944883](https://swsk33-note.oss-cn-shanghai.aliyuncs.com/image-20240930185944883.png)
+
+通过`SetLevelName`函数自定义的级别名称将应用于全局，无论是默认的`Logger`还是自定义的。
