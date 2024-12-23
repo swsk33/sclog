@@ -392,3 +392,146 @@ func main() {
 ![image-20240930185944883](https://swsk33-note.oss-cn-shanghai.aliyuncs.com/image-20240930185944883.png)
 
 通过`SetLevelName`函数自定义的级别名称将应用于全局，无论是默认的`Logger`还是自定义的。
+
+## 7，线程安全的日志
+
+默认的日志输出器`Logger`不是线程安全的，这可能导致在多线程同时调用一个日志输出时发生输出消息错乱的情况。
+
+因此，该类库还提供了下列线程安全的日志输出器实现：
+
+- `MutexLogger` 基于互斥锁的线程安全的日志实现
+- `BufferLogger` 基于通道缓冲区的线程安全的日志实现
+
+上述线程安全的日志输出器都继承于`Logger`对象，因此可以使用上述方式对其进行配置例如级别、输出内容和颜色等。
+
+### (1) `MutexLogger`的使用
+
+可以直接调用内部默认的`MutexLogger`函数实现：
+
+```go
+package main
+
+import "gitee.com/swsk33/sclog"
+
+func main() {
+	// 格式化输出
+	sclog.MutexTrace("基于互斥锁的线程安全日志，级别：%d\n", sclog.TRACE)
+	sclog.MutexDebug("基于互斥锁的线程安全日志，级别：%d\n", sclog.DEBUG)
+	sclog.MutexInfo("基于互斥锁的线程安全日志，级别：%d\n", sclog.INFO)
+	sclog.MutexWarn("基于互斥锁的线程安全日志，级别：%d\n", sclog.WARN)
+	sclog.MutexError("基于互斥锁的线程安全日志，级别：%d\n", sclog.ERROR)
+	// 单行输出
+	sclog.MutexTraceLine("基于互斥锁的线程安全日志，单行输出")
+	sclog.MutexDebugLine("基于互斥锁的线程安全日志，单行输出")
+	sclog.MutexInfoLine("基于互斥锁的线程安全日志，单行输出")
+	sclog.MutexWarnLine("基于互斥锁的线程安全日志，单行输出")
+	sclog.MutexErrorLine("基于互斥锁的线程安全日志，单行输出")
+}
+```
+
+只需在对应级别的方法名（例如`Info`）前面加上`Mutex`（例如`MutexInfo`）即可调用基于互斥锁的线程安全日志实现。
+
+此外，也可以使用构造函数`NewMutexLogger`创建自定义的互斥锁线程安全日志输出器：
+
+```go
+package main
+
+import (
+	"gitee.com/swsk33/sclog"
+	"sync"
+)
+
+func main() {
+	// 创建基于互斥锁的线程安全日志输出器
+	mutexLogger := sclog.NewMutexLogger()
+	mutexLogger.Level = sclog.INFO
+	// 调用对应级别方法即可
+	waitGroup := &sync.WaitGroup{}
+	waitGroup.Add(2)
+	go func() {
+		for i := 0; i <= 10; i += 2 {
+			mutexLogger.Info("[线程1] 当前输出：%d\n", i)
+		}
+		waitGroup.Done()
+	}()
+	go func() {
+		for i := 1; i <= 11; i += 2 {
+			mutexLogger.Info("[线程2] 当前输出：%d\n", i)
+		}
+		waitGroup.Done()
+	}()
+	waitGroup.Wait()
+}
+```
+
+基于互斥锁的线程安全日志输出器虽然能够保证线程安全，但是在并发调用数量过多时可能发生锁竞争导致性能有所下降。
+
+### (2) `BufferLogger`的使用
+
+同样地可以直接调用内部函数实现：
+
+```go
+package main
+
+import (
+	"gitee.com/swsk33/sclog"
+	"time"
+)
+
+func main() {
+	// 格式化输出
+	sclog.BufferTrace("基于缓冲区通道的线程安全日志，级别：%d\n", sclog.TRACE)
+	sclog.BufferDebug("基于缓冲区通道的线程安全日志，级别：%d\n", sclog.DEBUG)
+	sclog.BufferInfo("基于缓冲区通道的线程安全日志，级别：%d\n", sclog.INFO)
+	sclog.BufferWarn("基于缓冲区通道的线程安全日志，级别：%d\n", sclog.WARN)
+	sclog.BufferError("基于缓冲区通道的线程安全日志，级别：%d\n", sclog.ERROR)
+	// 单行输出
+	sclog.BufferTraceLine("基于缓冲区通道的线程安全日志，单行输出")
+	sclog.BufferDebugLine("基于缓冲区通道的线程安全日志，单行输出")
+	sclog.BufferInfoLine("基于缓冲区通道的线程安全日志，单行输出")
+	sclog.BufferWarnLine("基于缓冲区通道的线程安全日志，单行输出")
+	sclog.BufferErrorLine("基于缓冲区通道的线程安全日志，单行输出")
+	// 防止主线程提前退出
+	time.Sleep(100 * time.Millisecond)
+}
+```
+
+当然，也可以使用`NewBufferLogger`创建一个自定义的缓冲区线程安全日志输出器对象：
+
+```go
+package main
+
+import (
+	"gitee.com/swsk33/sclog"
+	"sync"
+	"time"
+)
+
+func main() {
+	// 创建基于缓冲区通道的线程安全日志输出器
+	bufferLogger := sclog.NewBufferLogger(10)
+	bufferLogger.Level = sclog.INFO
+	// 调用对应级别方法即可
+	waitGroup := &sync.WaitGroup{}
+	waitGroup.Add(2)
+	go func() {
+		for i := 0; i <= 10; i += 2 {
+			bufferLogger.Info("[线程1] 当前输出：%d\n", i)
+		}
+		waitGroup.Done()
+	}()
+	go func() {
+		for i := 1; i <= 11; i += 2 {
+			bufferLogger.Info("[线程2] 当前输出：%d\n", i)
+		}
+		waitGroup.Done()
+	}()
+	waitGroup.Wait()
+	// 防止主线程提前退出
+	time.Sleep(1 * time.Second)
+}
+```
+
+`NewBufferLogger`的参数表示日志消息缓冲区的大小，若同一时间消息超过了缓冲区大小且未被及时输出，则可能导致调用日志时发生阻塞。
+
+基于缓冲区通道的线程安全日志比起基于互斥锁的线程安全日志输出器通常会有更好的性能，但是可能造成额外的内存开销。
