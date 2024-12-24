@@ -9,14 +9,22 @@ type MutexLogger struct {
 	// 继承普通Logger
 	*Logger
 	// 互斥锁
-	lock sync.Mutex
+	lock *sync.Mutex
 }
 
 // NewMutexLogger 构造函数
 func NewMutexLogger() *MutexLogger {
 	return &MutexLogger{
 		Logger: NewLogger(),
-		lock:   sync.Mutex{},
+		lock:   &sync.Mutex{},
+	}
+}
+
+// NewMutexLoggerShareLock 构造函数，使用现有的锁对象
+func NewMutexLoggerShareLock(lock *sync.Mutex) *MutexLogger {
+	return &MutexLogger{
+		Logger: NewLogger(),
+		lock:   lock,
 	}
 }
 

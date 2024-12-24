@@ -464,6 +464,39 @@ func main() {
 }
 ```
 
+此外，还可以使用`NewMutexLoggerShareLock`传入一个现有的`sync.Mutex`对象，指定一个现有的互斥锁，实现多个日志输出器绑定到一个互斥锁上，这样即使创建多个`MutexLogger`对象，在多个线程中同时运行，也能够保证几个日志输出器的线程安全：
+
+```go
+package main
+
+import (
+	"gitee.com/swsk33/sclog"
+	"sync"
+)
+
+func main() {
+	// 互斥锁
+	lock := &sync.Mutex{}
+	// 创建两个日志输出器，使用同一个互斥锁
+	l1, l2 := sclog.NewMutexLoggerShareLock(lock), sclog.NewMutexLoggerShareLock(lock)
+	waitGroup := &sync.WaitGroup{}
+	waitGroup.Add(2)
+	go func() {
+		for i := 0; i <= 10; i += 2 {
+			l1.Info("[线程1] 当前输出：%d\n", i)
+		}
+		waitGroup.Done()
+	}()
+	go func() {
+		for i := 1; i <= 11; i += 2 {
+			l2.Info("[线程2] 当前输出：%d\n", i)
+		}
+		waitGroup.Done()
+	}()
+	waitGroup.Wait()
+}
+```
+
 基于互斥锁的线程安全日志输出器虽然能够保证线程安全，但是在并发调用数量过多时可能发生锁竞争导致性能有所下降。
 
 ### (2) `BufferLogger`的使用

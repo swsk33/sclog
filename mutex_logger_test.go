@@ -60,13 +60,38 @@ func TestMutexLoggerConcurrent(t *testing.T) {
 	waitGroup.Add(2)
 	go func() {
 		for i := 0; i <= 10; i += 2 {
-			logger.Info("[线程1]当前输出：%d\n", i)
+			logger.Info("[线程1] 当前输出：%d\n", i)
 		}
 		waitGroup.Done()
 	}()
 	go func() {
 		for i := 1; i <= 11; i += 2 {
-			logger.Info("[线程2]当前输出：%d\n", i)
+			logger.Info("[线程2] 当前输出：%d\n", i)
+		}
+		waitGroup.Done()
+	}()
+	waitGroup.Wait()
+	fmt.Println("----------------------------------")
+}
+
+// 使用现有锁的互斥日志
+func TestMutexLoggerShareLock(t *testing.T) {
+	SetLevelName(INFO, "INFO")
+	SetLevelName(WARN, "WARN")
+	SetLevelName(ERROR, "ERROR")
+	lock := &sync.Mutex{}
+	l1, l2 := NewMutexLoggerShareLock(lock), NewMutexLoggerShareLock(lock)
+	waitGroup := &sync.WaitGroup{}
+	waitGroup.Add(2)
+	go func() {
+		for i := 0; i <= 10; i += 2 {
+			l1.Info("[线程1] 当前输出：%d\n", i)
+		}
+		waitGroup.Done()
+	}()
+	go func() {
+		for i := 1; i <= 11; i += 2 {
+			l2.Info("[线程2] 当前输出：%d\n", i)
 		}
 		waitGroup.Done()
 	}()
