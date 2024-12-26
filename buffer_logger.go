@@ -69,29 +69,39 @@ func (logger *BufferLogger) printBufferMessage(message *bufferMessage) {
 	}
 }
 
+// 发送消息到通道
+func (logger *BufferLogger) sendBufferMessage(message *bufferMessage) {
+	// 捕获可能出现的panic
+	defer func() {
+		_ = recover()
+	}()
+	// 发送至通道
+	logger.messageChannel <- message
+}
+
 // Trace 打印一行TRACE级别日志
 //
 // formatMessage 格式化的消息字符串
 // args 格式化消息参数
 func (logger *BufferLogger) Trace(formatMessage string, args ...interface{}) {
-	logger.messageChannel <- &bufferMessage{
+	logger.sendBufferMessage(&bufferMessage{
 		level:         TRACE,
 		time:          time.Now(),
 		formatMessage: formatMessage,
 		args:          args,
-	}
+	})
 }
 
 // TraceLine 打印一行TRACE级别日志，并换行
 //
 // formatMessage 格式化的消息字符串
 func (logger *BufferLogger) TraceLine(messageLine string) {
-	logger.messageChannel <- &bufferMessage{
+	logger.sendBufferMessage(&bufferMessage{
 		level:         TRACE,
 		time:          time.Now(),
 		formatMessage: messageLine + "\n",
 		args:          []interface{}{},
-	}
+	})
 }
 
 // Debug 打印一行DEBUG级别日志
@@ -99,24 +109,24 @@ func (logger *BufferLogger) TraceLine(messageLine string) {
 // formatMessage 格式化的消息字符串
 // args 格式化消息参数
 func (logger *BufferLogger) Debug(formatMessage string, args ...interface{}) {
-	logger.messageChannel <- &bufferMessage{
+	logger.sendBufferMessage(&bufferMessage{
 		level:         DEBUG,
 		time:          time.Now(),
 		formatMessage: formatMessage,
 		args:          args,
-	}
+	})
 }
 
 // DebugLine 打印一行DEBUG级别日志，并换行
 //
 // formatMessage 格式化的消息字符串
 func (logger *BufferLogger) DebugLine(messageLine string) {
-	logger.messageChannel <- &bufferMessage{
+	logger.sendBufferMessage(&bufferMessage{
 		level:         DEBUG,
 		time:          time.Now(),
 		formatMessage: messageLine + "\n",
 		args:          []interface{}{},
-	}
+	})
 }
 
 // Info 打印一行INFO级别日志
@@ -124,24 +134,24 @@ func (logger *BufferLogger) DebugLine(messageLine string) {
 // formatMessage 格式化的消息字符串
 // args 格式化消息参数
 func (logger *BufferLogger) Info(formatMessage string, args ...interface{}) {
-	logger.messageChannel <- &bufferMessage{
+	logger.sendBufferMessage(&bufferMessage{
 		level:         INFO,
 		time:          time.Now(),
 		formatMessage: formatMessage,
 		args:          args,
-	}
+	})
 }
 
 // InfoLine 打印一行INFO级别日志，并换行
 //
 // formatMessage 格式化的消息字符串
 func (logger *BufferLogger) InfoLine(messageLine string) {
-	logger.messageChannel <- &bufferMessage{
+	logger.sendBufferMessage(&bufferMessage{
 		level:         INFO,
 		time:          time.Now(),
 		formatMessage: messageLine + "\n",
 		args:          []interface{}{},
-	}
+	})
 }
 
 // Warn 打印一行WARN级别日志
@@ -149,24 +159,24 @@ func (logger *BufferLogger) InfoLine(messageLine string) {
 // formatMessage 格式化的消息字符串
 // args 格式化消息参数
 func (logger *BufferLogger) Warn(formatMessage string, args ...interface{}) {
-	logger.messageChannel <- &bufferMessage{
+	logger.sendBufferMessage(&bufferMessage{
 		level:         WARN,
 		time:          time.Now(),
 		formatMessage: formatMessage,
 		args:          args,
-	}
+	})
 }
 
 // WarnLine 打印一行Warn级别日志，并换行
 //
 // formatMessage 格式化的消息字符串
 func (logger *BufferLogger) WarnLine(messageLine string) {
-	logger.messageChannel <- &bufferMessage{
+	logger.sendBufferMessage(&bufferMessage{
 		level:         WARN,
 		time:          time.Now(),
 		formatMessage: messageLine + "\n",
 		args:          []interface{}{},
-	}
+	})
 }
 
 // Error 打印一行ERROR级别日志
@@ -174,24 +184,24 @@ func (logger *BufferLogger) WarnLine(messageLine string) {
 // formatMessage 格式化的消息字符串
 // args 格式化消息参数
 func (logger *BufferLogger) Error(formatMessage string, args ...interface{}) {
-	logger.messageChannel <- &bufferMessage{
+	logger.sendBufferMessage(&bufferMessage{
 		level:         ERROR,
 		time:          time.Now(),
 		formatMessage: formatMessage,
 		args:          args,
-	}
+	})
 }
 
 // ErrorLine 打印一行Warn级别日志，并换行
 //
 // formatMessage 格式化的消息字符串
 func (logger *BufferLogger) ErrorLine(messageLine string) {
-	logger.messageChannel <- &bufferMessage{
+	logger.sendBufferMessage(&bufferMessage{
 		level:         ERROR,
 		time:          time.Now(),
 		formatMessage: messageLine + "\n",
 		args:          []interface{}{},
-	}
+	})
 }
 
 // Close 关闭缓冲区日志，释放资源
